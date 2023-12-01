@@ -1,26 +1,27 @@
 from flask import Flask, request, jsonify
 from datetime import date
 
+
 app = Flask(__name__)
 
 def Fecha():
     return date.today()
 
 class Operacion:
-    def __init__(self, numDest, fecha, valor, recibido=0):
+    def __init__(self, numEmi, numDest, fecha, valor):
+        self.numEmi = numEmi
         self.numDest = numDest
         self.fecha = fecha
         self.valor = valor
-        self.recibido = recibido
     
-    def Num(self):
+    def NumDest(self):
         return self.numDest
+    
+    def NumEmi(self):
+        return self.numEmi
 
     def Valor(self):
         return self.valor
-
-    def Recib(self):
-        return self.recibido
     
     
 class Cuenta:
@@ -41,22 +42,28 @@ class Cuenta:
         return self.saldo
 
     def Contactos(self):
-        c = self.contactos
-        return c
+        return self.contactos
     
     def agregarRecibido(self, op):
         self.historial.append(op)
-        return
+    
+    def sumarSaldo(self ,valor):
+        self.saldo += valor
 
     def Historial(self):
         return self.historial
 
     def Pagar(self, destino, valor):
-        fecha = str(Fecha())
-        ntrans = Operacion(destino, fecha, valor, 0)
-        self.historial.append(ntrans)
-        BD[destino].agregarRecibido(Operacion(destino, fecha, valor, 1))
-        return fecha
+        if destino in self.contactos and valor <= self.saldo:
+            fecha = str(Fecha())
+            ntrans = Operacion(self.numero, destino, fecha, valor)
+            self.saldo -= valor
+            self.historial.append(ntrans)
+            BD[destino].agregarRecibido(ntrans)
+            BD[destino].sumarSaldo(valor)
+            return "Realizado el {}".format(fecha)
+        else:
+            return "Datos no validos"
 
 
 BD = {21345:Cuenta(21345, "Arnaldo", 200, [123, 456]),
@@ -66,42 +73,46 @@ BD = {21345:Cuenta(21345, "Arnaldo", 200, [123, 456]),
 
 @app.route('/billetera/contactos', methods=['GET'])
 def obtener_contactos():
-    minumero = int(request.args.get('minumero'))
-    # Lógica para obtener los contactos
-    res = {}
-    contacts = BD[minumero].Contactos()
-    for c in contacts:
-        res[c] = BD[c].Nombre()
-    return jsonify(res)
+    try:
+        minumero = int(request.args.get('minumero'))
+        res = {}
+        contacts = BD[minumero].Contactos()
+        for c in contacts:
+            res[c] = BD[c].Nombre()
+        return jsonify(res), 200
+    except Exception as e:
+        return jsonify("Numero de cuenta no encontrado"), 404
 
 
 @app.route('/billetera/pagar', methods=['GET'])
 def realizar_pago():
-    minumero = int(request.args.get('minumero'))
-    numerodestino = int(request.args.get('numerodestino'))
-    valor = int(request.args.get('valor'))
-    # Lógica para realizar el pago
-    BD[minumero].Pagar(numerodestino, valor)
-    return jsonify('Realizado el {}'.format(str(Fecha())))
+    try:
+        minumero = int(request.args.get('minumero'))
+        numerodestino = int(request.args.get('numerodestino'))
+        valor = int(request.args.get('valor'))
+        res = BD[minumero].Pagar(numerodestino, valor)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify("Numero de cuenta no encontrado"), 404
 
 
 @app.route('/billetera/historial', methods=['GET'])
 def obtener_historial():
-    minumero = int(request.args.get('minumero'))
-    # Lógica para obtener el historial
-    hist = BD[minumero].Historial()
-    res = ""
-    res += "saldo de {}: {} \n".format(BD[minumero].Nombre(), BD[minumero].Saldo())
-    for h in hist:
-        if h.Recib():
-            res += "Pago realizado de {} a {}".format(h.Valor(), BD[h.Num()].Nombre())
-        else:
-            res += "Pago recibido de {} a {}".format(h.Valor(), BD[h.Num()].Nombre())
-    return res
+    try:
+        minumero = int(request.args.get('minumero'))
+        res = ""
+        res += "Saldo de {}: {} \n".format(BD[minumero].Nombre(), BD[minumero].Saldo())
+        hist = BD[minumero].Historial()
+        res += "Operaciones de {}: \n".format(BD[minumero].Nombre())
+        for h in hist:
+            if h.NumDest() != BD[minumero].Numero():
+                res += "Pago realizado de {} a {} \n".format(h.Valor(), BD[h.NumDest()].Nombre())
+            else:
+                res += "Pago recibido de {} de {} \n".format(h.Valor(), BD[h.NumEmi()].Nombre())
+        return res
+    except Exception as e:
+        return jsonify("Numero de cuenta no encontrado"), 404
 
-
-def create_app():
-    return app
 
 if __name__ == '__main__':
     app.run(debug=True,port=5000)

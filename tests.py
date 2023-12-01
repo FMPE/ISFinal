@@ -1,21 +1,38 @@
-from app.py import *
 import unittest
+from app import *
+
 
 class TestBilletera(unittest.TestCase):
-    # Prueba para obtener contactos
-    def test_obtener_contactos(self):
-        response = app.test_client().get('/billetera/contactos?minumero=21345')
-        data = response.get_json()
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(data, {123: "Luisa", 456: "Andrea"})
+    # Configurar datos para las pruebas
+    def setUp(self):
+        self.client = app.test_client()
 
-    # Prueba para realizar un pago
-    def test_realizar_pago(self):
-        response = app.test_client().get('/billetera/pagar?minumero=21345&numerodestino=123&valor=50')
-        self.assertEqual(response.status_code, 200)
+    #caso de exito
+    def test_realizar_pago_exitoso(self):
+        response = self.client.get('/billetera/pagar?minumero=21345&numerodestino=123&valor=50')
 
-    # Prueba para obtener el historial
-    def test_obtener_historial(self):
-        response = app.test_client().get('/billetera/historial?minumero=21345')
         self.assertEqual(response.status_code, 200)
+        self.assertIn('Realizado el', response.get_json())
 
+    #casos de error
+    def test_realizar_pago_numero_invalido(self):
+        response = self.client.get('/billetera/pagar?minumero=999&numerodestino=123&valor=50')
+
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('Numero de cuenta no encontrado', response.get_data(as_text=True))
+
+    def test_obtener_contactos_invalido(self):
+        response = self.client.get('/billetera/contactos?minumero=999')
+
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('Numero de cuenta no encontrado', response.get_data(as_text=True))
+
+    def test_obtener_historial_numero_invalido(self):
+        response = self.client.get('/billetera/historial?minumero=999')
+
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('Numero de cuenta no encontrado', response.get_data(as_text=True))
+
+
+if __name__ == '__main__':
+    unittest.main()

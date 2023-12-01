@@ -1,0 +1,35 @@
+Cambios en clases y metodos: 
+   - En la clase Cuenta agregar un nuevo atributo limite_ para indicar el límite máximo permitido para las operaciones.
+   - En el método Pagar verificar antes de realizar una transacción, que el valor a transferir no exceda el límite diario. 
+     Si lo excede, lanza una excepción o maneja la situación de manera adecuada.
+
+Nuevos casos de prueba sugeridos:
+   Casos de exito:
+      - Transferencia dentro del límite diario:
+         Verificar que se puede realizar una transferencia exitosa de 150 soles, que está dentro del límite diario.
+
+      - Transferencia en el límite diario:
+         Realizar una transferencia de exactamente 200 soles y asegurar que el sistema lo permita.
+
+      - Varias transferencias dentro del límite diario:
+         Realizar varias transferencias que en total sumen menos de 200 soles en un día y verificar que el sistema las 
+         permita.
+
+   Casos de error: 
+      - Transferencia excede el límite diario:
+         Intentar hacer una transferencia de 250 soles y asegurar que el sistema no lo permita, lanzando una excepción o 
+         manejando la situación adecuadamente.
+
+Riesgo de "romper" lo que ya funciona:
+   Impacto de NO realizar el cambio:
+      Sin la restricción del límite diario, los usuarios podrían realizar transferencias de cualquier cantidad en un solo 
+      día sin restricciones, lo que podría afectar la integridad del sistema
+   Beneficios de realizar el cambio:
+      Al introducir el límite diario de 200 soles, se limita la cantidad de dinero que un usuario puede transferir en un 
+      solo día. Esto ayuda a controlar y prevenir posibles abusos o errores.
+   Número de usuarios afectados por el cambio:
+      Afectará directamente a todos los usuarios que utilicen la funcionalidad de transferencia de dinero.
+   
+   El riesgo de romper el código existente depende de la complejidad de las modificaciones y de cómo se implementen. 
+   Al agregar la restricción del límite diario, es importante asegurarse de que las nuevas validaciones no afecten
+   negativamente las operaciones existentes.
